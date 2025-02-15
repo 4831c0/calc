@@ -1,10 +1,10 @@
 use crate::token::{Opcode, Operand, Token};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Node<T> {
-    value: Option<Box<T>>,
-    left: Option<Box<Node<T>>>,
-    right: Option<Box<Node<T>>>,
+    pub value: Option<Box<T>>,
+    pub left: Option<Box<Node<T>>>,
+    pub right: Option<Box<Node<T>>>,
 }
 
 pub fn tokens_to_tree(tokens: Vec<Token>) -> Result<Node<Token>, String> {

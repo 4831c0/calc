@@ -1,13 +1,13 @@
 use std::fs::File;
 use std::io::Read;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Opcode {
     Const,
     Operand
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Operand {
     Int(i32),
     Add,
@@ -16,7 +16,7 @@ pub enum Operand {
     Div
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Token {
     pub op: Opcode,
     pub or: Operand,
