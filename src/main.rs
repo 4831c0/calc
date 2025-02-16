@@ -28,5 +28,5 @@ fn main() {
     }
     println!("=== [vm] ===");
 
-    println!("final vm state: {:#?}", run(insns).unwrap());
+    println!("final vm state: {:#?}", run(insns).unwrap().debug());
 }
