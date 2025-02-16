@@ -17,6 +17,7 @@ pub struct State {
 }
 
 impl State {
+
     fn step(&mut self) -> Result<(), String> {
         let insn = self.instructions.get(self.i).unwrap();
         println!("running: {:?}", insn);

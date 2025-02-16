@@ -73,3 +73,30 @@ pub fn tokens_to_tree(tokens: Vec<Token>) -> Result<Node<Token>, String> {
 
     Ok(tree)
 }
+
+impl Node<Token> {
+    pub fn convert_dot(&self) -> String {
+        let mut buff = String::from("graph G {\n    n0 [shape=Mdiamond];\n    n0 [label=\"start\"];\n");
+        let mut last_id = 0;
+
+        self.convert_dot_inner(&mut buff, &mut last_id, 0);
+
+        buff.push_str("}\n");
+        buff
+    }
+
+    fn convert_dot_inner(&self, buff: &mut String, last_id: &mut i32, id_above: i32) {
+        let my_id = *last_id + 1;
+        *last_id += 1;
+
+        buff.push_str(&format!("    n{} -- n{}; \n", id_above, my_id));
+        buff.push_str(&format!("    n{} [label=\"{:?}\"];\n", my_id, self.value.as_ref().unwrap().or));
+
+        if let Some(right) = &self.right {
+            right.convert_dot_inner(buff, last_id, my_id);
+        }
+        if let Some(left) = &self.left {
+            left.convert_dot_inner(buff, last_id, my_id);
+        }
+    }
+}
