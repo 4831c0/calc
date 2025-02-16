@@ -4,7 +4,7 @@ use std::io::Read;
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Opcode {
     Const,
-    Operand
+    Operand,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -13,7 +13,7 @@ pub enum Operand {
     Add,
     Sub,
     Mul,
-    Div
+    Div,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -36,7 +36,7 @@ pub fn tokenize(mut file: File) -> Result<Vec<Token>, &'static str> {
 
             match num_buff.parse::<i32>() {
                 Ok(num) => {
-                    tokens.push(Token{
+                    tokens.push(Token {
                         op: Opcode::Const,
                         or: Operand::Int(num),
                     });
@@ -50,36 +50,36 @@ pub fn tokenize(mut file: File) -> Result<Vec<Token>, &'static str> {
         }
         match c {
             '+' => {
-                tokens.push(Token{
+                tokens.push(Token {
                     op: Opcode::Operand,
                     or: Operand::Add,
                 });
-            },
+            }
             '-' => {
-                tokens.push(Token{
+                tokens.push(Token {
                     op: Opcode::Operand,
                     or: Operand::Sub,
                 });
-            },
+            }
             '*' => {
-                tokens.push(Token{
+                tokens.push(Token {
                     op: Opcode::Operand,
                     or: Operand::Mul,
                 });
-            },
+            }
             '/' => {
-                tokens.push(Token{
+                tokens.push(Token {
                     op: Opcode::Operand,
                     or: Operand::Div,
                 });
-            },
+            }
             '0'..'9' => {
                 num_buff.push(c);
                 reading_num = true;
-            },
+            }
             _ => {
                 panic!("Unexpected character: {}", c)
-            },
+            }
         }
 
         res = file.read_exact(&mut buf);
@@ -88,7 +88,7 @@ pub fn tokenize(mut file: File) -> Result<Vec<Token>, &'static str> {
     if reading_num {
         match num_buff.parse::<i32>() {
             Ok(num) => {
-                tokens.push(Token{
+                tokens.push(Token {
                     op: Opcode::Const,
                     or: Operand::Int(num),
                 });

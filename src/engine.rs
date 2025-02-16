@@ -182,12 +182,10 @@ fn handle_right(
                         None => return Err("node_to_instructions didn't emit any instructions!"),
                         Some(last_insn) => match last_insn.operands.get(0) {
                             None => return Err("last_insn doesn't have any operands"),
-                            Some(operand) => {
-                                insns.push(Instruction {
-                                    opcode: InsnOpcode::Copy,
-                                    operands: vec![exec_reg_right, operand.clone()],
-                                })
-                            },
+                            Some(operand) => insns.push(Instruction {
+                                opcode: InsnOpcode::Copy,
+                                operands: vec![exec_reg_right, operand.clone()],
+                            }),
                         },
                     }
 

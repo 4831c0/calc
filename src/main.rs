@@ -1,11 +1,11 @@
+mod engine;
 mod token;
 mod tree;
-mod engine;
 
-use std::fs::File;
 use crate::engine::tree_to_instructions;
 use crate::token::tokenize;
 use crate::tree::tokens_to_tree;
+use std::fs::File;
 
 fn main() {
     let file = File::open("input.txt").unwrap();

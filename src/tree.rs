@@ -1,4 +1,4 @@
-use crate::token::{Opcode, Operand, Token};
+use crate::token::{Opcode, Token};
 
 #[derive(Debug, Clone)]
 pub struct Node<T> {
@@ -44,10 +44,7 @@ pub fn tokens_to_tree(tokens: Vec<Token>) -> Result<Node<Token>, String> {
                             }
                             Some(right_right) => match right_right.value.as_ref() {
                                 None => {
-                                    return Err(format!(
-                                        "No value for {:#?}",
-                                        right_right.value
-                                    ))
+                                    return Err(format!("No value for {:#?}", right_right.value))
                                 }
                                 Some(right_token) => {
                                     if right_token.op == Opcode::Operand {
