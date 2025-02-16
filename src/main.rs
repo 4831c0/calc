@@ -15,6 +15,4 @@ fn main() {
     println!("=== [parse tree] ===\n{:#?}", tree);
     let insns = tree_to_instructions(tree).unwrap();
     println!("=== [instructions] ===\n{:#?}", insns);
-
-    println!("{:#?}", insns);
 }
