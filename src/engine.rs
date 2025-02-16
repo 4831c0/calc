@@ -8,6 +8,7 @@ pub enum InsnOpcode {
     Ldc,
     Push,
     Pop,
+    Copy,
 
     // math
     Add,
@@ -157,12 +158,10 @@ fn handle_right(
 
                         match operand_to_insn_opcode(operand) {
                             Err(err) => return Err(err),
-                            Ok(op) => {
-                                insns.push(Instruction {
-                                    opcode: op,
-                                    operands: vec![exec_reg_left, exec_reg_right],
-                                })
-                            }
+                            Ok(op) => insns.push(Instruction {
+                                opcode: op,
+                                operands: vec![exec_reg_left, exec_reg_right],
+                            }),
                         }
                     }
                     Err(err) => return Err(err),
@@ -179,13 +178,26 @@ fn handle_right(
                         }
                     }
 
+                    match insns.get(insns.len() - 1) {
+                        None => return Err("node_to_instructions didn't emit any instructions!"),
+                        Some(last_insn) => match last_insn.operands.get(0) {
+                            None => return Err("last_insn doesn't have any operands"),
+                            Some(operand) => {
+                                insns.push(Instruction {
+                                    opcode: InsnOpcode::Copy,
+                                    operands: vec![exec_reg_right, operand.clone()],
+                                })
+                            },
+                        },
+                    }
+
                     match operand_to_insn_opcode(operand) {
                         Err(err) => return Err(err),
                         Ok(op) => {
                             insns.push(Instruction {
                                 opcode: op,
                                 operands: vec![exec_reg_left, exec_reg_right],
-                            })
+                            });
                         }
                     }
                 }
