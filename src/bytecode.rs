@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use crate::bytecode::InsnOperand::{Reg0, Reg1, Reg2, Reg3, Reg4, Reg5, Reg6, Reg7};
 use crate::token::{Opcode, Operand, Token};
 use crate::tree::Node;
@@ -16,7 +17,6 @@ pub enum InsnOpcode {
     Mul,
     Div,
 }
-
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum InsnOperand {
     Int(i32),
@@ -29,20 +29,17 @@ pub enum InsnOperand {
     Reg6,
     Reg7,
 }
-
 #[derive(Debug, Clone)]
 pub struct Instruction {
     pub opcode: InsnOpcode,
     pub operands: Vec<InsnOperand>,
 }
-
 fn operand_to_insn_operand(opcode: Operand) -> Result<InsnOperand, &'static str> {
     match opcode {
         Operand::Int(x) => Ok(InsnOperand::Int(x)),
         _ => Err("Invalid operand"),
     }
 }
-
 fn operand_to_insn_opcode(opcode: Operand) -> Result<InsnOpcode, &'static str> {
     match opcode {
         Operand::Add => Ok(InsnOpcode::Add),
@@ -52,7 +49,6 @@ fn operand_to_insn_opcode(opcode: Operand) -> Result<InsnOpcode, &'static str> {
         _ => Err("Invalid operand"),
     }
 }
-
 fn handle_node(
     registers: &mut Vec<InsnOperand>,
     operand: Operand,
@@ -286,4 +282,23 @@ pub fn tree_to_instructions(tree: Node<Token>) -> Result<Vec<Instruction>, &'sta
     }
 
     Ok(insns)
+}
+
+impl Display for Instruction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        // Opc OP1, Op2, .. OpN
+        let mut buff = String::new();
+
+        for i in 0 .. self.operands.len() {
+            if i == 0 {
+                buff.push_str(&format!("{:?}", &self.operands[i]));
+                continue;
+            }
+
+            buff.push_str(&format!(", {:?} ", &self.operands[i]));
+
+        }
+
+        write!(f, "{:?} {}", self.opcode, buff)
+    }
 }

@@ -73,7 +73,7 @@ pub fn tokenize(mut file: File) -> Result<Vec<Token>, &'static str> {
                     or: Operand::Div,
                 });
             }
-            '0'..'9' => {
+            '0'..='9' => {
                 num_buff.push(c);
                 reading_num = true;
             }
