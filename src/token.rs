@@ -31,7 +31,7 @@ pub fn tokenize(mut file: File) -> Result<Vec<Token>, &'static str> {
     let mut reading_num = false;
     while res.is_ok() {
         let c = buf[0] as char;
-        if (reading_num && (c < '0' || c > '9')) {
+        if reading_num && (c < '0' || c > '9') {
             reading_num = false;
 
             match num_buff.parse::<i32>() {

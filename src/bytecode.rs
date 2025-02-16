@@ -1,4 +1,4 @@
-use crate::engine::InsnOperand::{Reg0, Reg1, Reg2, Reg3, Reg4, Reg5, Reg6, Reg7};
+use crate::bytecode::InsnOperand::{Reg0, Reg1, Reg2, Reg3, Reg4, Reg5, Reg6, Reg7};
 use crate::token::{Opcode, Operand, Token};
 use crate::tree::Node;
 
