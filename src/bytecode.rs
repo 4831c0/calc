@@ -19,7 +19,8 @@ pub enum InsnOpcode {
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum InsnOperand {
-    Int(i32),
+    Imm(i32),
+    Stack(usize),
     Reg0,
     Reg1,
     Reg2,
@@ -38,7 +39,7 @@ pub struct Instruction {
 
 fn operand_to_insn_operand(opcode: Operand) -> Result<InsnOperand, &'static str> {
     match opcode {
-        Operand::Int(x) => Ok(InsnOperand::Int(x)),
+        Operand::Int(x) => Ok(InsnOperand::Imm(x)),
         _ => Err("Invalid operand"),
     }
 }
@@ -54,7 +55,7 @@ fn operand_to_insn_opcode(opcode: Operand) -> Result<InsnOpcode, &'static str> {
 }
 
 fn handle_node(
-    registers: &mut Vec<InsnOperand>,
+    reg_alloc: &mut RegisterAllocation,
     operand: Operand,
     left_reg: InsnOperand,
     right_reg: InsnOperand,
@@ -63,9 +64,9 @@ fn handle_node(
     let mut insns: Vec<Instruction> = Vec::new();
     let mut recursed = false;
     // the next register that is going to be used
-    let mut next_reg = InsnOperand::Int(-1);
+    let mut next_reg = InsnOperand::Imm(-1);
     // the last register used inside node_to_instructions
-    let mut recursed_last_reg = InsnOperand::Int(-1);
+    let mut recursed_last_reg = InsnOperand::Imm(-1);
 
     match &node.left {
         None => return Err("No left hand side value for instruction"),
@@ -74,23 +75,14 @@ fn handle_node(
             Some(left) => match left.op {
                 Opcode::Const => match operand_to_insn_operand(left.or) {
                     Ok(val) => {
-                        if left_reg == InsnOperand::Int(-1) {
-                            // use the stack
-                            insns.push(Instruction {
-                                opcode: InsnOpcode::Push,
-                                operands: vec![Reg0],
-                            })
-                        } else {
-                            // use the register
-                            insns.push(Instruction {
-                                opcode: InsnOpcode::Ldc,
-                                operands: vec![left_reg, val],
-                            });
-                        }
+                        insns.push(Instruction {
+                            opcode: InsnOpcode::Ldc,
+                            operands: vec![left_reg, val],
+                        });
                     }
                     Err(err) => return Err(err),
                 },
-                Opcode::Operand => match node_to_instructions(registers, (**left_node).clone()) {
+                Opcode::Operand => match node_to_instructions(reg_alloc, (**left_node).clone()) {
                     Err(err) => return Err(err),
                     Ok(insns2) => {
                         println!("recursed insns: {:?}", insns2);
@@ -116,7 +108,7 @@ fn handle_node(
         });
     }
 
-    match handle_right(registers, operand, left_reg, right_reg, node) {
+    match handle_right(reg_alloc, operand, left_reg, right_reg, node) {
         Err(err) => return Err(err),
         Ok(insns2) => {
             for insn in insns2 {
@@ -125,34 +117,17 @@ fn handle_node(
         }
     }
 
-    if left_reg == InsnOperand::Int(-1) {
-        insns.push(Instruction {
-            opcode: InsnOpcode::Pop,
-            operands: vec![Reg0],
-        })
-    }
-
     Ok(insns)
 }
 
 fn handle_right(
-    registers: &mut Vec<InsnOperand>,
+    reg_alloc: &mut RegisterAllocation,
     operand: Operand,
     left_reg: InsnOperand,
     right_reg: InsnOperand,
     node: Node<Token>,
 ) -> Result<Vec<Instruction>, &'static str> {
     let mut insns: Vec<Instruction> = Vec::new();
-
-    let mut exec_reg_left = left_reg;
-    let mut exec_reg_right = right_reg;
-
-    if exec_reg_left == InsnOperand::Int(-1) {
-        exec_reg_left = Reg0;
-    }
-    if exec_reg_right == InsnOperand::Int(-1) {
-        exec_reg_right = Reg1;
-    }
 
     match &node.right {
         None => return Err("No right hand side value for instruction"),
@@ -161,26 +136,17 @@ fn handle_right(
             Some(right) => match right.op {
                 Opcode::Const => match operand_to_insn_operand(right.or) {
                     Ok(val) => {
-                        if right_reg == InsnOperand::Int(-1) {
-                            // use the stack
-                            insns.push(Instruction {
-                                opcode: InsnOpcode::Push,
-                                operands: vec![Reg1],
-                            });
-                        } else {
-                            // use the register
-                            insns.push(Instruction {
-                                opcode: InsnOpcode::Ldc,
-                                operands: vec![right_reg, val],
-                            });
-                        }
+                        insns.push(Instruction {
+                            opcode: InsnOpcode::Ldc,
+                            operands: vec![right_reg, val],
+                        });
 
                         println!("{:?}", &node);
                         match operand_to_insn_opcode(operand) {
                             Err(err) => return Err(err),
                             Ok(op) => insns.push(Instruction {
                                 opcode: op,
-                                operands: vec![exec_reg_left, exec_reg_right],
+                                operands: vec![left_reg, right_reg],
                             }),
                         }
                     }
@@ -189,7 +155,7 @@ fn handle_right(
 
                 Opcode::Operand => {
                     let i = (**right_node).clone();
-                    match node_to_instructions(registers, i) {
+                    match node_to_instructions(reg_alloc, i) {
                         Err(err) => return Err(err),
                         Ok(insns2) => {
                             for insn in insns2 {
@@ -204,7 +170,7 @@ fn handle_right(
                             None => return Err("last_insn doesn't have any operands"),
                             Some(operand) => insns.push(Instruction {
                                 opcode: InsnOpcode::Copy,
-                                operands: vec![exec_reg_right, operand.clone()],
+                                operands: vec![right_reg, operand.clone()],
                             }),
                         },
                     }
@@ -214,7 +180,7 @@ fn handle_right(
                         Ok(op) => {
                             insns.push(Instruction {
                                 opcode: op,
-                                operands: vec![exec_reg_left, exec_reg_right],
+                                operands: vec![left_reg, right_reg],
                             });
                         }
                     }
@@ -223,18 +189,11 @@ fn handle_right(
         },
     }
 
-    if right_reg == InsnOperand::Int(-1) {
-        insns.push(Instruction {
-            opcode: InsnOpcode::Pop,
-            operands: vec![Reg1],
-        });
-    }
-
     Ok(insns)
 }
 
 fn node_to_instructions(
-    registers: &mut Vec<InsnOperand>,
+    reg_alloc: &mut RegisterAllocation,
     node: Node<Token>,
 ) -> Result<Vec<Instruction>, &'static str> {
     let mut insns: Vec<Instruction> = Vec::new();
@@ -245,16 +204,24 @@ fn node_to_instructions(
         }
         Some(token) => match token.or {
             Operand::Add | Operand::Sub | Operand::Mul | Operand::Div => {
-                let mut reg1 = InsnOperand::Int(-1);
-                let mut reg2 = InsnOperand::Int(-1);
-                if registers.len() > 1 {
-                    reg1 = registers.swap_remove(0);
-                    reg2 = registers.swap_remove(0);
-                } else if registers.len() > 0 {
-                    reg1 = registers.swap_remove(0);
+                let reg1;
+                let reg2;
+
+                if reg_alloc.registers.len() > 1 {
+                    reg1 = reg_alloc.registers.swap_remove(0);
+                    reg2 = reg_alloc.registers.swap_remove(0);
+                } else if reg_alloc.registers.len() > 0 {
+                    reg1 = reg_alloc.registers.swap_remove(0);
+                    reg2 = InsnOperand::Stack(reg_alloc.stack_index);
+                    reg_alloc.stack_index += 1;
+                } else {
+                    reg1 = InsnOperand::Stack(reg_alloc.stack_index);
+                    reg_alloc.stack_index += 1;
+                    reg2 = InsnOperand::Stack(reg_alloc.stack_index);
+                    reg_alloc.stack_index += 1;
                 }
 
-                match handle_node(registers, token.or, reg1, reg2, node) {
+                match handle_node(reg_alloc, token.or, reg1, reg2, node) {
                     Ok(insns2) => {
                         for insn in insns2 {
                             insns.push(insn);
@@ -272,17 +239,35 @@ fn node_to_instructions(
     Ok(insns)
 }
 
+struct RegisterAllocation {
+    registers: Vec<InsnOperand>,
+    stack_index: usize,
+}
+
 pub fn tree_to_instructions(tree: Node<Token>) -> Result<Vec<Instruction>, &'static str> {
     let mut insns: Vec<Instruction> = Vec::new();
-    let mut registers = vec![Reg0, Reg1, Reg2, Reg3, Reg4, Reg5, Reg6, Reg7];
+    let mut reg_alloc = RegisterAllocation {
+        registers: vec![Reg0, Reg1, Reg2, Reg3, Reg4, Reg5, Reg6, Reg7],
+        stack_index: 0,
+    };
 
-    match node_to_instructions(&mut registers, tree) {
+    match node_to_instructions(&mut reg_alloc, tree) {
         Err(err) => return Err(err),
         Ok(instructions) => {
             for insn in instructions {
                 insns.push(insn)
             }
         }
+    }
+
+    for _ in 0..reg_alloc.stack_index {
+        insns.insert(
+            0,
+            Instruction {
+                opcode: InsnOpcode::Push,
+                operands: vec![InsnOperand::Imm(0)],
+            },
+        );
     }
 
     Ok(insns)
