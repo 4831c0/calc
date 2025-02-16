@@ -123,10 +123,10 @@ fn handle_right(
     node: Node<Token>,
 ) -> Result<Vec<Instruction>, &'static str> {
     let mut insns: Vec<Instruction> = Vec::new();
-    
+
     let mut exec_reg_left = left_reg;
     let mut exec_reg_right = right_reg;
-    
+
     if exec_reg_left == InsnOperand::Int(-1) {
         exec_reg_left = Reg0;
     }
@@ -167,14 +167,28 @@ fn handle_right(
                     }
                     Err(err) => return Err(err),
                 },
-                Opcode::Operand => match node_to_instructions(registers, (**right_node).clone()) {
-                    Err(err) => return Err(err),
-                    Ok(insns2) => {
-                        for insn in insns2 {
-                            insns.push(insn);
+
+                Opcode::Operand => {
+                    let i = (**right_node).clone();
+                    match node_to_instructions(registers, i) {
+                        Err(err) => return Err(err),
+                        Ok(insns2) => {
+                            for insn in insns2 {
+                                insns.push(insn);
+                            }
                         }
                     }
-                },
+
+                    match operand_to_insn_opcode(operand) {
+                        Err(err) => return Err(err),
+                        Ok(op) => {
+                            insns.push(Instruction {
+                                opcode: op,
+                                operands: vec![exec_reg_left, exec_reg_right],
+                            })
+                        }
+                    }
+                }
             },
         },
     }
