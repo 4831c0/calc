@@ -30,7 +30,7 @@ pub enum InsnOperand {
     Reg7,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Instruction {
     pub opcode: InsnOpcode,
     pub operands: Vec<InsnOperand>,
@@ -61,6 +61,11 @@ fn handle_node(
     node: Node<Token>,
 ) -> Result<Vec<Instruction>, &'static str> {
     let mut insns: Vec<Instruction> = Vec::new();
+    let mut recursed = false;
+    // the next register that is going to be used
+    let mut next_reg = InsnOperand::Int(-1);
+    // the last register used inside node_to_instructions
+    let mut recursed_last_reg = InsnOperand::Int(-1);
 
     match &node.left {
         None => return Err("No left hand side value for instruction"),
@@ -88,13 +93,27 @@ fn handle_node(
                 Opcode::Operand => match node_to_instructions(registers, (**left_node).clone()) {
                     Err(err) => return Err(err),
                     Ok(insns2) => {
+                        println!("recursed insns: {:?}", insns2);
                         for insn in insns2 {
+                            match insn.clone().operands.get(0) {
+                                None => {}
+                                Some(reg) => recursed_last_reg = reg.clone(),
+                            }
                             insns.push(insn);
                         }
+                        recursed = true;
+                        next_reg = left_reg;
                     }
                 },
             },
         },
+    }
+
+    if recursed {
+        insns.push(Instruction {
+            opcode: InsnOpcode::Copy,
+            operands: vec![next_reg, recursed_last_reg],
+        });
     }
 
     match handle_right(registers, operand, left_reg, right_reg, node) {
@@ -156,6 +175,7 @@ fn handle_right(
                             });
                         }
 
+                        println!("{:?}", &node);
                         match operand_to_insn_opcode(operand) {
                             Err(err) => return Err(err),
                             Ok(op) => insns.push(Instruction {
