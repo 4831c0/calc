@@ -18,5 +18,5 @@ fn main() {
     let insns = tree_to_instructions(tree).unwrap();
     println!("=== [instructions] ===\n{:#?}", insns);
 
-    println!("final vm state: {:#?}", run(insns).unwrap());
+    println!("final vm state: {:#?}", run(insns).unwrap().debug());
 }

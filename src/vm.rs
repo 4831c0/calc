@@ -1,4 +1,5 @@
 use crate::bytecode::{InsnOpcode, InsnOperand, Instruction};
+use std::fmt;
 
 #[derive(Debug)]
 pub struct State {
@@ -259,6 +260,28 @@ impl State {
 
         Ok(())
     }
+    pub fn debug(&self) -> StateDebug<'_> {
+        StateDebug(self)
+    }
+}
+
+pub struct StateDebug<'a>(&'a State);
+
+impl fmt::Debug for StateDebug<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("State")
+            .field("i", &self.0.i)
+            .field("reg0", &self.0.reg0)
+            .field("reg1", &self.0.reg1)
+            .field("reg2", &self.0.reg2)
+            .field("reg3", &self.0.reg3)
+            .field("reg4", &self.0.reg4)
+            .field("reg5", &self.0.reg5)
+            .field("reg6", &self.0.reg6)
+            .field("reg7", &self.0.reg7)
+            .field("stack", &self.0.stack)
+            .finish()
+    }
 }
 
 pub fn run(instructions: Vec<Instruction>) -> Result<State, String> {
@@ -281,6 +304,7 @@ pub fn run(instructions: Vec<Instruction>) -> Result<State, String> {
             Ok(()) => {}
             Err(msg) => return Err(msg),
         }
+        println!("step: {:#?}", state.debug());
     }
 
     Ok(state)
